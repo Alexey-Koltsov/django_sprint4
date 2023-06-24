@@ -1,14 +1,17 @@
+from django.core.exceptions import PermissionDenied
+from django.core.exceptions import PermissionDenied
 from django.core.paginator import Paginator
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.views.generic import CreateView, DeleteView, DetailView
 from django.views.generic import ListView, UpdateView
-from django.urls import reverse_lazy
+from django.urls import reverse, reverse_lazy
 
 from django.shortcuts import get_list_or_404, get_object_or_404, render
 from django.utils import timezone
 
 from blog.models import Category, Post
 from django.contrib.auth import get_user_model
+
 
 from .forms import PostForm
 
@@ -36,14 +39,14 @@ def index(request):
     return render(request, 'blog/index.html', context)
 
 
-def post_detail(request, id):
+def post_detail(request, post_id):
     posts = get_object_or_404(
-        Post.objects.select_related('category', 'location').filter(
+        Post.objects.select_related('category', 'location', 'author').filter(
             pub_date__lte=timezone.now(),
             is_published=True,
             category__is_published=True,
         ),
-        pk=id
+        pk=post_id
     )
     context = {'post': posts}
     return render(request, 'blog/detail.html', context)
@@ -111,6 +114,42 @@ class PostCreateView(LoginRequiredMixin, CreateView):
     def get_success_url(self) -> str:
         return reverse_lazy('blog:profile',
                             kwargs={'username': self.object.author})
+
+
+class PostUpdateView(LoginRequiredMixin, UpdateView):
+    model = Post
+    form_class = PostForm
+    template_name = 'blog/create.html'
+    pk_url_kwarg = 'post_id'
+    
+    def get_success_url(self):
+        return reverse(
+            'blog:post_detail',
+            kwargs={'post_id': self.kwargs['post_id']}
+        )
+    
+    def dispatch(self, request, *args, **kwargs):
+        # При получении объекта не указываем автора.
+        # Результат сохраняем в переменную.
+        #instance = get_object_or_404(Post, pk=kwargs['post_id'])
+        instance = get_object_or_404(Post, pk=kwargs['post_id'])
+        # Сверяем автора объекта и пользователя из запроса.
+        if instance.author != request.user:
+            # Здесь может быть как вызов ошибки, так и редирект на нужную страницу.
+            raise PermissionDenied
+        return super().dispatch(request, *args, **kwargs)
+
+
+class PostDeleteView(DeleteView):
+    pass
+
+
+class CommentCreateView(CreateView):
+    pass
+
+
+class CommentDeleteView(DeleteView):
+    pass
 
 
 def profile_detail(request, username):
