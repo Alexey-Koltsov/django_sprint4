@@ -10,13 +10,14 @@ urlpatterns = [
     # Путь к странице создания поста
     path('post/create', views.PostCreateView.as_view(), name='create_post'),
     # Путь к странице поста
-    path('posts/<int:post_id>/', views.post_detail, name='post_detail'),
+    path('posts/<int:pk>/', views.post_detail, name='post_detail'),
     # Путь к странице редактирования поста
-    path('posts/<int:post_id>/edit/', views.PostUpdateView.as_view(),
+    path('posts/<int:pk>/edit/', views.PostUpdateView.as_view(),
          name='edit_post'),
     # Путь к странице удаления поста
-    path('posts/<int:post_id/delete/', views.PostDeleteView.as_view(),
+    path('posts/<int:pk>/delete/', views.PostDeleteView.as_view(),
          name='delete_post'),
+
     # Путь к странице добавления комментария
     path('posts/<int:post_id/comment/', views.CommentCreateView.as_view(), name='add_comment'),
     # Путь к странице удаления комментария

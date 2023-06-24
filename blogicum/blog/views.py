@@ -39,14 +39,14 @@ def index(request):
     return render(request, 'blog/index.html', context)
 
 
-def post_detail(request, post_id):
+def post_detail(request, pk):
     posts = get_object_or_404(
         Post.objects.select_related('category', 'location', 'author').filter(
             pub_date__lte=timezone.now(),
             is_published=True,
             category__is_published=True,
         ),
-        pk=post_id
+        pk=pk
     )
     context = {'post': posts}
     return render(request, 'blog/detail.html', context)
@@ -120,19 +120,18 @@ class PostUpdateView(LoginRequiredMixin, UpdateView):
     model = Post
     form_class = PostForm
     template_name = 'blog/create.html'
-    pk_url_kwarg = 'post_id'
-    
+    success_url = reverse_lazy('blog:post_detail')
+
     def get_success_url(self):
         return reverse(
             'blog:post_detail',
-            kwargs={'post_id': self.kwargs['post_id']}
+            kwargs={'pk': self.kwargs['pk']}
         )
     
     def dispatch(self, request, *args, **kwargs):
         # При получении объекта не указываем автора.
         # Результат сохраняем в переменную.
-        #instance = get_object_or_404(Post, pk=kwargs['post_id'])
-        instance = get_object_or_404(Post, pk=kwargs['post_id'])
+        instance = get_object_or_404(Post, pk=kwargs['pk'])
         # Сверяем автора объекта и пользователя из запроса.
         if instance.author != request.user:
             # Здесь может быть как вызов ошибки, так и редирект на нужную страницу.
