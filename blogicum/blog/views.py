@@ -1,19 +1,24 @@
 from django.core.exceptions import PermissionDenied
-from django.core.exceptions import PermissionDenied
 from django.core.paginator import Paginator
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.views.generic import CreateView, DeleteView, DetailView
-from django.views.generic import ListView, UpdateView
-from django.urls import reverse, reverse_lazy
+from django.views.generic import (
+    CreateView, DeleteView, DetailView, ListView, UpdateView
+)
 
-from django.shortcuts import get_list_or_404, get_object_or_404, render
+from django.urls import reverse, reverse_lazy
+from django.contrib.auth.decorators import login_required
+
+from django.shortcuts import (
+    get_list_or_404, get_object_or_404, redirect, render
+)
+
 from django.utils import timezone
 
-from blog.models import Category, Post
+from blog.models import Category, Comment, Post
 from django.contrib.auth import get_user_model
 
 
-from .forms import PostForm
+from .forms import CommentForm, PostForm
 
 User = get_user_model()
 
@@ -40,7 +45,7 @@ def index(request):
 
 
 def post_detail(request, pk):
-    posts = get_object_or_404(
+    post = get_object_or_404(
         Post.objects.select_related('category', 'location', 'author').filter(
             pub_date__lte=timezone.now(),
             is_published=True,
@@ -48,7 +53,12 @@ def post_detail(request, pk):
         ),
         pk=pk
     )
-    context = {'post': posts}
+    post_comments = post.comments.select_related('author')
+    context = {
+        'post': post,
+        'form': CommentForm(),
+        'comments': post_comments,
+    }
     return render(request, 'blog/detail.html', context)
 
 
@@ -127,27 +137,57 @@ class PostUpdateView(LoginRequiredMixin, UpdateView):
             'blog:post_detail',
             kwargs={'pk': self.kwargs['pk']}
         )
-    
+
     def dispatch(self, request, *args, **kwargs):
         # При получении объекта не указываем автора.
         # Результат сохраняем в переменную.
         instance = get_object_or_404(Post, pk=kwargs['pk'])
         # Сверяем автора объекта и пользователя из запроса.
         if instance.author != request.user:
-            # Здесь может быть как вызов ошибки, так и редирект на нужную страницу.
+            # Здесь может быть как вызов ошибки,
+            # так и редирект на нужную страницу.
             raise PermissionDenied
         return super().dispatch(request, *args, **kwargs)
 
 
-class PostDeleteView(DeleteView):
+class PostDeleteView(LoginRequiredMixin, DeleteView):
+    model = Post
+    form_class = PostForm
+    template_name = 'blog/create.html'
+    success_url = reverse_lazy('blog:index')
+
+    def dispatch(self, request, *args, **kwargs):
+        # Получаем объект по первичному ключу и автору или вызываем 404 ошибку.
+        get_object_or_404(Post, pk=kwargs['pk'], author=request.user)
+        # Если объект был найден, то вызываем родительский метод,
+        # чтобы работа CBV продолжилась.
+        return super().dispatch(request, *args, **kwargs)
+
+
+@login_required
+def add_comment(request, pk):
+    # Получаем объект поста или выбрасываем 404 ошибку.
+    post = get_object_or_404(Post, pk=pk)
+    # Функция должна обрабатывать только POST-запросы.
+    form = CommentForm(request.POST)
+    if form.is_valid():
+        # Создаём объект комментария, но не сохраняем его в БД.
+        comment = form.save(commit=False)
+        # В поле author передаём объект автора комментария.
+        comment.author = request.user
+        # В поле comment передаём объект поста.
+        comment.post = post
+        # Сохраняем объект в БД.
+        comment.save()
+    # Перенаправляем пользователя назад, на страницу поста.
+    return redirect('blog:post_detail', pk=pk)
+
+
+class CommentUpdateView(LoginRequiredMixin, UpdateView):
     pass
 
 
-class CommentCreateView(CreateView):
-    pass
-
-
-class CommentDeleteView(DeleteView):
+class CommentDeleteView(LoginRequiredMixin, DeleteView):
     pass
 
 

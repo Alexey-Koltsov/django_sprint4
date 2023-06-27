@@ -2,7 +2,7 @@ from django import forms
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth import get_user_model
 
-from .models import Post
+from .models import Comment, Post
 
 # Получаем модель пользователя:
 User = get_user_model()
@@ -28,3 +28,10 @@ class PostForm(forms.ModelForm):
             'pub_date': forms.DateTimeInput(attrs={'type': 'datetime-local',
                                                    'class': 'form-control'})
         }
+
+
+class CommentForm(forms.ModelForm):
+
+    class Meta:
+        model = Comment
+        fields = ('text',)

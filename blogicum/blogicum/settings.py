@@ -140,3 +140,9 @@ LOGIN_REDIRECT_URL = 'blog:index'
 LOGIN_URL = 'login'
 
 MEDIA_ROOT = BASE_DIR / 'media'
+
+# Подключаем бэкенд filebased.EmailBackend:
+EMAIL_BACKEND = 'django.core.mail.backends.filebased.EmailBackend'
+
+# Указываем директорию, в которую будут сохраняться файлы писем:
+EMAIL_FILE_PATH = BASE_DIR / 'sent_emails'

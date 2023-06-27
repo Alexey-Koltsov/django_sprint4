@@ -4,7 +4,6 @@
   {{ post.pub_date|date:"d E Y" }}
 {% endblock %}
 {% block content %}
-
   <div class="col d-flex justify-content-center">
     <div class="card" style="width: 40rem;">
       <div class="card-body">
@@ -14,8 +13,8 @@
               <img class="border-3 rounded img-fluid img-thumbnail mb-2 mx-auto d-block" src="{{ post.image.url }}">
             </a>
           {% endif %}
-          </form>
-          <h5 class="card-title">{{ post.title }}</h5>
+        </form>
+        <h5 class="card-title">{{ post.title }}</h5>
         <h6 class="card-subtitle mb-2 text-muted">
           <small>
             {% if not post.is_published %}
@@ -34,12 +33,12 @@
             <a class="btn btn-sm text-muted" href="{% url 'blog:edit_post' post.id %}" role="button">
               Отредактировать публикацию
             </a>
-            <!-- <a class="btn btn-sm text-muted" href="{% url 'blog:delete_post' post.id %}" role="button">
+            <a class="btn btn-sm text-muted" href="{% url 'blog:delete_post' post.id %}" role="button">
               Удалить публикацию
             </a>
           </div>
         {% endif %}
-        {% include "includes/comments.html" %} -->
+        {% include "includes/comments.html" %}
       </div>
     </div>
   </div>

@@ -19,12 +19,10 @@
   </small>
   <br>
   <h3 class="mb-5 text-center">Публикации пользователя</h3>
-  <form method="post" enctype="multipart/form-data">
-    {% for post in page_obj %}
-      <article class="mb-5">
-        {% include "includes/post_card.html" %}
-      </article>
-    {% endfor %}
-  </form>
+  {% for post in page_obj %}
+    <article class="mb-5">
+      {% include "includes/post_card.html" %}
+    </article>
+  {% endfor %}
   {% include "includes/paginator.html" %}
 {% endblock %}
