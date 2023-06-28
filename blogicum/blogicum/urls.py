@@ -1,12 +1,10 @@
 from blog.forms import CustomUserCreationForm
-from django.views.generic.edit import CreateView
-
 from django.conf import settings
 # Импортируем функцию, позволяющую серверу разработки отдавать файлы.
 from django.conf.urls.static import static
 from django.contrib import admin
 from django.urls import include, path, reverse_lazy
-
+from django.views.generic.edit import CreateView
 
 urlpatterns = [
     path('', include('blog.urls', namespace='blog')),

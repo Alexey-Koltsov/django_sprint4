@@ -1,22 +1,14 @@
-from django.core.exceptions import PermissionDenied
-from django.core.paginator import Paginator
-from django.contrib.auth.mixins import LoginRequiredMixin
-from django.views.generic import (
-    CreateView, DeleteView, DetailView, ListView, UpdateView
-)
-
-from django.urls import reverse, reverse_lazy
-from django.contrib.auth.decorators import login_required
-
-from django.shortcuts import (
-    get_list_or_404, get_object_or_404, redirect, render
-)
-
-from django.utils import timezone
-
 from blog.models import Category, Comment, Post
 from django.contrib.auth import get_user_model
-
+from django.contrib.auth.decorators import login_required
+from django.contrib.auth.mixins import LoginRequiredMixin
+from django.core.exceptions import PermissionDenied
+from django.core.paginator import Paginator
+from django.shortcuts import (get_list_or_404, get_object_or_404, redirect,
+                              render)
+from django.urls import reverse, reverse_lazy
+from django.utils import timezone
+from django.views.generic import (CreateView, DeleteView, UpdateView)
 
 from .forms import CommentForm, PostForm
 
@@ -109,8 +101,6 @@ class PostCreateView(LoginRequiredMixin, CreateView):
     # Явным образом указываем шаблон:
     template_name = 'blog/create.html'
     # Указываем namespace:name страницы, куда будет перенаправлен пользователь
-    # после создания объекта:
-    success_url = reverse_lazy('blog:profile')
 
     def form_valid(self, form):
         # Присвоить полю author объект пользователя из запроса.
@@ -184,17 +174,57 @@ def add_comment(request, pk):
 
 
 class CommentUpdateView(LoginRequiredMixin, UpdateView):
-    pass
+    model = Comment
+    form_class = CommentForm
+    template_name = 'blog/comment.html'
+    pk_url_kwarg = 'comment_id'
+
+    def get_success_url(self):
+        return reverse(
+            'blog:post_detail',
+            kwargs={'pk': self.kwargs['post_id']}
+        )
+
+    def dispatch(self, request, *args, **kwargs):
+        # При получении объекта не указываем автора.
+        # Результат сохраняем в переменную.
+        instance = get_object_or_404(Comment, pk=kwargs['comment_id'])
+        # Сверяем автора объекта и пользователя из запроса.
+        if instance.author != request.user:
+            # Здесь может быть как вызов ошибки,
+            # так и редирект на нужную страницу.
+            raise PermissionDenied
+        return super().dispatch(request, *args, **kwargs)
 
 
 class CommentDeleteView(LoginRequiredMixin, DeleteView):
-    pass
+    model = Comment
+    form_class = CommentForm
+    template_name = 'blog/comment.html'
+    pk_url_kwarg = 'comment_id'
+
+    def get_success_url(self):
+        return reverse(
+            'blog:post_detail',
+            kwargs={'pk': self.kwargs['post_id']}
+        )
+
+    def dispatch(self, request, *args, **kwargs):
+        # Получаем объект по первичному ключу и автору или вызываем 404 ошибку.
+        get_object_or_404(
+            Comment, pk=kwargs['comment_id'], author=request.user
+        )
+        # Если объект был найден, то вызываем родительский метод,
+        # чтобы работа CBV продолжилась.
+        return super().dispatch(request, *args, **kwargs)
 
 
 def profile_detail(request, username):
     """Отображение страницы пользователя"""
     profile = User.objects.get(username=username)
-    post_list = Post.objects.filter(author__username=username)
+    post_list = Post.objects.filter(
+        author__username=username
+    ).order_by('-pub_date')
     paginator = Paginator(post_list, 10)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
@@ -210,7 +240,6 @@ class UserUpdateView(LoginRequiredMixin, UpdateView):
     model = User
     fields = ('username', 'first_name', 'last_name', 'email')
     template_name = 'blog/user.html'
-    success_url = reverse_lazy('blog:profile')
 
     def get_object(self, queryset=None):
         return self.request.user
