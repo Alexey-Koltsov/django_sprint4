@@ -24,10 +24,10 @@ class PostForm(forms.ModelForm):
         # Указываем, что надо отобразить все поля за исключением
         exclude = ('author',)
         # Подключаем виджет с типом: дата
-        #widgets = {
-        #   'pub_date': forms.DateTimeInput(attrs={'type': 'datetime-local',
-        #                                          'class': 'form-control'})
-        #}
+        widgets = {
+           'pub_date': forms.DateTimeInput(attrs={'type': 'datetime-local',
+                                                  'class': 'form-control'})
+        }
 
 
 class CommentForm(forms.ModelForm):

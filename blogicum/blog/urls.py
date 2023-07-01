@@ -9,7 +9,7 @@ urlpatterns = [
     path('', views.index, name='index'),
 
     # Путь к странице создания поста
-    path('post/create/', views.PostCreateView.as_view(), name='create_post'),
+    path('posts/create/', views.PostCreateView.as_view(), name='create_post'),
     # Путь к странице поста
     path('posts/<int:pk>/', views.post_detail, name='post_detail'),
     # Путь к странице редактирования поста
@@ -20,7 +20,7 @@ urlpatterns = [
          name='delete_post'),
 
     # Путь к странице добавления комментария
-    path('posts/<int:pk>/comment/', views.add_comment,
+    path('posts/<int:post_id>/comment/', views.CommentCreateView.as_view(),
          name='add_comment'),
     # Путь к странице изменения комментария
     path('posts/<int:post_id>/edit_comment/<int:comment_id>/',

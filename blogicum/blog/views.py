@@ -1,11 +1,9 @@
 from blog.models import Category, Comment, Post
 from django.contrib.auth import get_user_model
-from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.exceptions import PermissionDenied
 from django.core.paginator import Paginator
-from django.shortcuts import (get_list_or_404, get_object_or_404, redirect,
-                              render)
+from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse, reverse_lazy
 from django.utils import timezone
 from django.views.generic import (CreateView, DeleteView, UpdateView)
@@ -56,26 +54,17 @@ def post_detail(request, pk):
 
 def category_posts(request, category_slug):
     categories = get_object_or_404(
-        Category.objects.values('title', 'description'),
-        slug=category_slug
-    )
+        Category,
+        slug=category_slug,
+        is_published=True)
     # Получаем список всех объектов с сортировкой по дате публикации.
-    posts = get_list_or_404(
-        Post.objects.only(
-            'pub_date',
-            'title',
-            'location',
-            'author',
-            'text',
-            'category__slug',
-            'category__title',
+    posts = Post.objects.select_related(
+        'location', 'author', 'category'
         ).filter(
-            category__slug=category_slug,
             is_published=True,
             pub_date__lte=timezone.now(),
-        ).order_by('-pub_date'),
-        category__is_published=True
-    )
+            ).order_by('-pub_date')
+
     # Создаём объект пагинатора с количеством 10 записей на страницу.
     paginator = Paginator(posts, 10)
     # Получаем из запроса значение параметра page.
@@ -100,7 +89,6 @@ class PostCreateView(LoginRequiredMixin, CreateView):
     form_class = PostForm
     # Явным образом указываем шаблон:
     template_name = 'blog/create.html'
-    # Указываем namespace:name страницы, куда будет перенаправлен пользователь
 
     def form_valid(self, form):
         # Присвоить полю author объект пользователя из запроса.
@@ -120,7 +108,6 @@ class PostUpdateView(LoginRequiredMixin, UpdateView):
     model = Post
     form_class = PostForm
     template_name = 'blog/create.html'
-    success_url = reverse_lazy('blog:post_detail')
 
     def get_success_url(self):
         return reverse(
@@ -129,14 +116,9 @@ class PostUpdateView(LoginRequiredMixin, UpdateView):
         )
 
     def dispatch(self, request, *args, **kwargs):
-        # При получении объекта не указываем автора.
-        # Результат сохраняем в переменную.
-        instance = get_object_or_404(Post, pk=kwargs['pk'])
-        # Сверяем автора объекта и пользователя из запроса.
-        if instance.author != request.user:
-            # Здесь может быть как вызов ошибки,
-            # так и редирект на нужную страницу.
-            raise PermissionDenied
+        post = get_object_or_404(Post, pk=self.kwargs['pk'])
+        if request.user != post.author:
+            return redirect('blog:post_detail', pk=post.pk)
         return super().dispatch(request, *args, **kwargs)
 
 
@@ -147,30 +129,32 @@ class PostDeleteView(LoginRequiredMixin, DeleteView):
     success_url = reverse_lazy('blog:index')
 
     def dispatch(self, request, *args, **kwargs):
-        # Получаем объект по первичному ключу и автору или вызываем 404 ошибку.
-        get_object_or_404(Post, pk=kwargs['pk'], author=request.user)
-        # Если объект был найден, то вызываем родительский метод,
-        # чтобы работа CBV продолжилась.
+        post = get_object_or_404(Post, pk=self.kwargs['pk'])
+        if request.user != post.author:
+            return redirect('blog:post_detail', pk=post.pk)
         return super().dispatch(request, *args, **kwargs)
 
 
-@login_required
-def add_comment(request, pk):
-    # Получаем объект поста или выбрасываем 404 ошибку.
-    post = get_object_or_404(Post, pk=pk)
-    # Функция должна обрабатывать только POST-запросы.
-    form = CommentForm(request.POST)
-    if form.is_valid():
-        # Создаём объект комментария, но не сохраняем его в БД.
-        comment = form.save(commit=False)
-        # В поле author передаём объект автора комментария.
-        comment.author = request.user
-        # В поле comment передаём объект поста.
-        comment.post = post
-        # Сохраняем объект в БД.
-        comment.save()
-    # Перенаправляем пользователя назад, на страницу поста.
-    return redirect('blog:post_detail', pk=pk)
+class CommentCreateView(LoginRequiredMixin, CreateView):
+    model = Comment
+    form_class = CommentForm
+    template_name = 'blog/comments.html'
+    pk_url_kwarg = 'post_id'
+
+    def dispatch(self, request, *args, **kwargs):
+        self.posts = get_object_or_404(Post, pk=kwargs['post_id'])
+        return super().dispatch(request, *args, **kwargs)
+
+    def form_valid(self, form):
+        form.instance.author = self.request.user
+        form.instance.post = self.posts
+        return super().form_valid(form)
+
+    def get_success_url(self):
+        return reverse(
+            'blog:post_detail',
+            kwargs={'pk': self.kwargs['post_id']}
+        )
 
 
 class CommentUpdateView(LoginRequiredMixin, UpdateView):
