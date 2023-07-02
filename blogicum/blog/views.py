@@ -52,6 +52,31 @@ def post_detail(request, pk):
     return render(request, 'blog/detail.html', context)
 
 
+"""
+class PostDetailView(DetailView):
+    model = Post
+    form_class = PostForm
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        post = get_object_or_404(
+            Post.objects.select_related('category', 'location', 'author').filter(
+                pub_date__lte=timezone.now(),
+                is_published=True,
+                category__is_published=True,
+            ),
+            pk=pk
+        )
+        # Записываем в переменную form пустой объект формы.
+        context['form'] = CommentForm()
+        # Запрашиваем все комментарии для выбранного поста.
+        context['comments'] = (
+            self.object.comments.select_related('author')
+        )
+        return context
+"""
+
+
 def category_posts(request, category_slug):
     categories = get_object_or_404(
         Category,
@@ -108,15 +133,16 @@ class PostUpdateView(LoginRequiredMixin, UpdateView):
     model = Post
     form_class = PostForm
     template_name = 'blog/create.html'
+    pk_url_kwarg = 'post_id'
 
     def get_success_url(self):
         return reverse(
             'blog:post_detail',
-            kwargs={'pk': self.kwargs['pk']}
+            kwargs={'pk': self.kwargs['post_id']}
         )
 
     def dispatch(self, request, *args, **kwargs):
-        post = get_object_or_404(Post, pk=self.kwargs['pk'])
+        post = get_object_or_404(Post, pk=self.kwargs['post_id'])
         if request.user != post.author:
             return redirect('blog:post_detail', pk=post.pk)
         return super().dispatch(request, *args, **kwargs)
@@ -127,9 +153,10 @@ class PostDeleteView(LoginRequiredMixin, DeleteView):
     form_class = PostForm
     template_name = 'blog/create.html'
     success_url = reverse_lazy('blog:index')
+    pk_url_kwarg = 'post_id'
 
     def dispatch(self, request, *args, **kwargs):
-        post = get_object_or_404(Post, pk=self.kwargs['pk'])
+        post = get_object_or_404(Post, pk=self.kwargs['post_id'])
         if request.user != post.author:
             return redirect('blog:post_detail', pk=post.pk)
         return super().dispatch(request, *args, **kwargs)
@@ -141,13 +168,10 @@ class CommentCreateView(LoginRequiredMixin, CreateView):
     template_name = 'blog/comments.html'
     pk_url_kwarg = 'post_id'
 
-    def dispatch(self, request, *args, **kwargs):
-        self.posts = get_object_or_404(Post, pk=kwargs['post_id'])
-        return super().dispatch(request, *args, **kwargs)
-
     def form_valid(self, form):
+        posts = get_object_or_404(Post, pk=self.kwargs['post_id'])
         form.instance.author = self.request.user
-        form.instance.post = self.posts
+        form.instance.post = posts
         return super().form_valid(form)
 
     def get_success_url(self):
