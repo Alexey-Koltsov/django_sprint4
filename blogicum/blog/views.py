@@ -52,31 +52,6 @@ def post_detail(request, pk):
     return render(request, 'blog/detail.html', context)
 
 
-"""
-class PostDetailView(DetailView):
-    model = Post
-    form_class = PostForm
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        post = get_object_or_404(
-            Post.objects.select_related('category', 'location', 'author').filter(
-                pub_date__lte=timezone.now(),
-                is_published=True,
-                category__is_published=True,
-            ),
-            pk=pk
-        )
-        # Записываем в переменную form пустой объект формы.
-        context['form'] = CommentForm()
-        # Запрашиваем все комментарии для выбранного поста.
-        context['comments'] = (
-            self.object.comments.select_related('author')
-        )
-        return context
-"""
-
-
 def category_posts(request, category_slug):
     categories = get_object_or_404(
         Category,
@@ -218,12 +193,14 @@ class CommentDeleteView(LoginRequiredMixin, DeleteView):
         )
 
     def dispatch(self, request, *args, **kwargs):
-        # Получаем объект по первичному ключу и автору или вызываем 404 ошибку.
-        get_object_or_404(
-            Comment, pk=kwargs['comment_id'], author=request.user
-        )
-        # Если объект был найден, то вызываем родительский метод,
-        # чтобы работа CBV продолжилась.
+        # При получении объекта не указываем автора.
+        # Результат сохраняем в переменную.
+        instance = get_object_or_404(Comment, pk=kwargs['comment_id'])
+        # Сверяем автора объекта и пользователя из запроса.
+        if instance.author != request.user:
+            # Здесь может быть как вызов ошибки,
+            # так и редирект на нужную страницу.
+            raise PermissionDenied
         return super().dispatch(request, *args, **kwargs)
 
 
