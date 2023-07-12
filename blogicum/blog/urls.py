@@ -18,7 +18,6 @@ urlpatterns = [
     # Путь к странице удаления поста
     path('posts/<int:post_id>/delete/', views.PostDeleteView.as_view(),
          name='delete_post'),
-
     # Путь к странице добавления комментария
     path('posts/<int:post_id>/comment/', views.CommentCreateView.as_view(),
          name='add_comment'),
@@ -28,7 +27,6 @@ urlpatterns = [
     # Путь к странице удаления комментария
     path('posts/<int:post_id>/delete_comment/<int:comment_id>/',
          views.CommentDeleteView.as_view(), name='delete_comment'),
-
     # Путь к странице profile
     path('profile/<slug:username>/', views.profile_detail, name='profile'),
     # Путь к странице редактирования profile

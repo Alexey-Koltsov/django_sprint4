@@ -14,6 +14,7 @@ User = get_user_model()
 
 
 def index(request):
+    """Главная страница"""
     # Получаем список всех объектов с сортировкой по дате публикации.
     posts = Post.objects.select_related('category', 'location').filter(
         pub_date__lte=timezone.now(),
@@ -35,6 +36,7 @@ def index(request):
 
 
 def post_detail(request, pk):
+    """Страница поста"""
     post = get_object_or_404(
         Post.objects.select_related('category', 'location', 'author').filter(
             pub_date__lte=timezone.now(),
@@ -53,6 +55,7 @@ def post_detail(request, pk):
 
 
 def category_posts(request, category_slug):
+    """Страница категории"""
     categories = get_object_or_404(
         Category,
         slug=category_slug,
@@ -83,6 +86,7 @@ def category_posts(request, category_slug):
 
 
 class PostCreateView(LoginRequiredMixin, CreateView):
+    """Создание поста"""
     # Указываем модель, с которой работает CBV...
     model = Post
     # Указываем поля, которые должны быть в форме:
@@ -105,6 +109,7 @@ class PostCreateView(LoginRequiredMixin, CreateView):
 
 
 class PostUpdateView(LoginRequiredMixin, UpdateView):
+    """Редактирование поста"""
     model = Post
     form_class = PostForm
     template_name = 'blog/create.html'
@@ -124,6 +129,7 @@ class PostUpdateView(LoginRequiredMixin, UpdateView):
 
 
 class PostDeleteView(LoginRequiredMixin, DeleteView):
+    """Удаление поста"""
     model = Post
     form_class = PostForm
     template_name = 'blog/create.html'
@@ -138,6 +144,7 @@ class PostDeleteView(LoginRequiredMixin, DeleteView):
 
 
 class CommentCreateView(LoginRequiredMixin, CreateView):
+    """Создание комментария"""
     model = Comment
     form_class = CommentForm
     template_name = 'blog/comments.html'
@@ -157,6 +164,7 @@ class CommentCreateView(LoginRequiredMixin, CreateView):
 
 
 class CommentUpdateView(LoginRequiredMixin, UpdateView):
+    """Редактирования комментария"""
     model = Comment
     form_class = CommentForm
     template_name = 'blog/comment.html'
@@ -181,6 +189,7 @@ class CommentUpdateView(LoginRequiredMixin, UpdateView):
 
 
 class CommentDeleteView(LoginRequiredMixin, DeleteView):
+    """Удаление комментария"""
     model = Comment
     form_class = CommentForm
     template_name = 'blog/comment.html'
