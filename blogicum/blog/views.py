@@ -63,10 +63,10 @@ def category_posts(request, category_slug):
     # Получаем список всех объектов с сортировкой по дате публикации.
     posts = Post.objects.select_related(
         'location', 'author', 'category'
-        ).filter(
-            is_published=True,
-            pub_date__lte=timezone.now(),
-            ).order_by('-pub_date')
+    ).filter(
+        is_published=True,
+        pub_date__lte=timezone.now(),
+    ).order_by('-pub_date')
 
     # Создаём объект пагинатора с количеством 10 записей на страницу.
     paginator = Paginator(posts, 10)
