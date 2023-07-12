@@ -25,10 +25,8 @@ class PostForm(forms.ModelForm):
         exclude = ('author',)
         # Подключаем виджет с типом: дата
         widgets = {
-           'pub_date': forms.DateTimeInput(attrs={
-                'type': 'datetime-local',
-                'class': 'form-control'
-            })
+            'pub_date': forms.DateTimeInput(attrs={'type': 'datetime-local',
+                                                   'class': 'form-control'})
         }
 
 
