@@ -38,13 +38,20 @@ def index(request):
 def post_detail(request, pk):
     """Страница поста"""
     post = get_object_or_404(
-        Post.objects.select_related('category', 'location', 'author').filter(
-            pub_date__lte=timezone.now(),
-            is_published=True,
-            category__is_published=True,
-        ),
+        Post.objects.select_related('category', 'location', 'author'),
         pk=pk
     )
+    if post.author != request.user:
+        post = get_object_or_404(
+            Post.objects.select_related(
+                'category', 'location', 'author'
+            ).filter(
+                pub_date__lte=timezone.now(),
+                is_published=True,
+                category__is_published=True,
+            ),
+            pk=pk
+        )
     post_comments = post.comments.select_related('author')
     context = {
         'post': post,
@@ -64,10 +71,10 @@ def category_posts(request, category_slug):
     posts = Post.objects.select_related(
         'location', 'author', 'category'
     ).filter(
+        category__slug=category_slug,
         is_published=True,
         pub_date__lte=timezone.now(),
     ).order_by('-pub_date')
-
     # Создаём объект пагинатора с количеством 10 записей на страницу.
     paginator = Paginator(posts, 10)
     # Получаем из запроса значение параметра page.
@@ -215,7 +222,7 @@ class CommentDeleteView(LoginRequiredMixin, DeleteView):
 
 def profile_detail(request, username):
     """Отображение страницы пользователя"""
-    profile = User.objects.get(username=username)
+    profile = get_object_or_404(User, username=username)
     post_list = Post.objects.filter(
         author__username=username
     ).order_by('-pub_date')
