@@ -6,23 +6,27 @@ admin.site.empty_value_display = 'Не задано'
 
 
 class PostInline(admin.StackedInline):
+    """Задаем отображение записей в админзоне столбом."""
     model = Post
     extra = 0
 
 
 class LocationAdmin(admin.ModelAdmin):
+    """Переопределяем настройки интерфейса админки для модели локаций."""
     inlines = (
         PostInline,
     )
 
 
 class CategoryAdmin(admin.ModelAdmin):
+    """Переопределяем настройки интерфейса админки для модели категорий."""
     inlines = (
         PostInline,
     )
 
 
 class PostAdmin(admin.ModelAdmin):
+    """Переопределяем настройки интерфейса админки для модели постов."""
     list_display = (
         'title',
         'text',

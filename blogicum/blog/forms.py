@@ -4,26 +4,21 @@ from django.contrib.auth.forms import UserCreationForm
 
 from .models import Comment, Post
 
-# Получаем модель пользователя:
 User = get_user_model()
 
 
 class CustomUserCreationForm(UserCreationForm):
-
-    # Наследуем класс Meta от соответствующего класса родительской формы.
-    # Так этот класс будет не перезаписан, а расширен.
+    """Переопределяем модель пользователя и поля модели."""
     class Meta(UserCreationForm.Meta):
         model = User
         fields = ('username', 'first_name', 'last_name', 'email')
 
 
 class PostForm(forms.ModelForm):
+    """Форма для модели постов."""
     class Meta:
-        # Указываем модель, на основе которой должна строиться форма.
         model = Post
-        # Указываем, что надо отобразить все поля за исключением
         exclude = ('author',)
-        # Подключаем виджет с типом: дата
         widgets = {
             'pub_date': forms.DateTimeInput(attrs={'type': 'datetime-local',
                                                    'class': 'form-control'})
@@ -31,7 +26,7 @@ class PostForm(forms.ModelForm):
 
 
 class CommentForm(forms.ModelForm):
-
+    """Форма для модели комментариев."""
     class Meta:
         model = Comment
         fields = ('text',)

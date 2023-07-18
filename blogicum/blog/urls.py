@@ -7,8 +7,6 @@ app_name = 'blog'
 urlpatterns = [
     # Путь к главной странице
     path('', views.index, name='index'),
-
-    # Путь к странице создания поста
     path('posts/create/', views.PostCreateView.as_view(), name='create_post'),
     # Путь к странице поста
     path('posts/<int:pk>/', views.post_detail, name='post_detail'),

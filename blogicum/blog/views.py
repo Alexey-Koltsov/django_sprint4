@@ -1,4 +1,3 @@
-from blog.models import Category, Comment, Post
 from django.contrib.auth import get_user_model
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.exceptions import PermissionDenied
@@ -6,7 +5,9 @@ from django.core.paginator import Paginator
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse, reverse_lazy
 from django.utils import timezone
-from django.views.generic import (CreateView, DeleteView, UpdateView)
+from django.views.generic import CreateView, DeleteView, UpdateView
+
+from blog.models import Category, Comment, Post
 
 from .forms import CommentForm, PostForm
 
@@ -15,22 +16,14 @@ User = get_user_model()
 
 def index(request):
     """Главная страница"""
-    # Получаем список всех объектов с сортировкой по дате публикации.
     posts = Post.objects.select_related('category', 'location').filter(
         pub_date__lte=timezone.now(),
         is_published=True,
         category__is_published=True,
     ).order_by('-pub_date')
-    # Создаём объект пагинатора с количеством 10 записей на страницу.
     paginator = Paginator(posts, 10)
-    # Получаем из запроса значение параметра page.
     page_number = request.GET.get('page')
-    # Получаем запрошенную страницу пагинатора.
-    # Если параметра page нет в запросе или его значение не приводится к числу,
-    # вернётся первая страница.
     page_obj = paginator.get_page(page_number)
-    # Вместо полного списка объектов передаём в контекст
-    # объект страницы пагинатора
     context = {'page_obj': page_obj}
     return render(request, 'blog/index.html', context)
 
@@ -67,7 +60,6 @@ def category_posts(request, category_slug):
         Category,
         slug=category_slug,
         is_published=True)
-    # Получаем список всех объектов с сортировкой по дате публикации.
     posts = Post.objects.select_related(
         'location', 'author', 'category'
     ).filter(
@@ -75,16 +67,9 @@ def category_posts(request, category_slug):
         is_published=True,
         pub_date__lte=timezone.now(),
     ).order_by('-pub_date')
-    # Создаём объект пагинатора с количеством 10 записей на страницу.
     paginator = Paginator(posts, 10)
-    # Получаем из запроса значение параметра page.
     page_number = request.GET.get('page')
-    # Получаем запрошенную страницу пагинатора.
-    # Если параметра page нет в запросе или его значение не приводится к числу,
-    # вернётся первая страница.
     page_obj = paginator.get_page(page_number)
-    # Вместо полного списка объектов передаём в контекст
-    # объект страницы пагинатора
     context = {
         'page_obj': page_obj,
         'category': categories,
@@ -94,17 +79,12 @@ def category_posts(request, category_slug):
 
 class PostCreateView(LoginRequiredMixin, CreateView):
     """Создание поста"""
-    # Указываем модель, с которой работает CBV...
     model = Post
-    # Указываем поля, которые должны быть в форме:
     form_class = PostForm
-    # Явным образом указываем шаблон:
     template_name = 'blog/create.html'
 
     def form_valid(self, form):
-        # Присвоить полю author объект пользователя из запроса.
         form.instance.author = self.request.user
-        # Продолжить валидацию, описанную в форме.
         return super().form_valid(form)
 
     def get_object(self, queryset=None):
@@ -184,13 +164,8 @@ class CommentUpdateView(LoginRequiredMixin, UpdateView):
         )
 
     def dispatch(self, request, *args, **kwargs):
-        # При получении объекта не указываем автора.
-        # Результат сохраняем в переменную.
         instance = get_object_or_404(Comment, pk=kwargs['comment_id'])
-        # Сверяем автора объекта и пользователя из запроса.
         if instance.author != request.user:
-            # Здесь может быть как вызов ошибки,
-            # так и редирект на нужную страницу.
             raise PermissionDenied
         return super().dispatch(request, *args, **kwargs)
 
@@ -209,13 +184,8 @@ class CommentDeleteView(LoginRequiredMixin, DeleteView):
         )
 
     def dispatch(self, request, *args, **kwargs):
-        # При получении объекта не указываем автора.
-        # Результат сохраняем в переменную.
         instance = get_object_or_404(Comment, pk=kwargs['comment_id'])
-        # Сверяем автора объекта и пользователя из запроса.
         if instance.author != request.user:
-            # Здесь может быть как вызов ошибки,
-            # так и редирект на нужную страницу.
             raise PermissionDenied
         return super().dispatch(request, *args, **kwargs)
 
