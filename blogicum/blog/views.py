@@ -13,6 +13,15 @@ from .forms import CommentForm, PostForm
 
 User = get_user_model()
 
+POSTS_PER_PAGE = 10
+
+
+def pagination(request, posts):
+    paginator = Paginator(posts, POSTS_PER_PAGE)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    return page_obj
+
 
 def index(request):
     """Главная страница"""
@@ -20,10 +29,8 @@ def index(request):
         pub_date__lte=timezone.now(),
         is_published=True,
         category__is_published=True,
-    ).order_by('-pub_date')
-    paginator = Paginator(posts, 10)
-    page_number = request.GET.get('page')
-    page_obj = paginator.get_page(page_number)
+    )
+    page_obj = pagination(request, posts)
     context = {'page_obj': page_obj}
     return render(request, 'blog/index.html', context)
 
@@ -66,10 +73,8 @@ def category_posts(request, category_slug):
         category__slug=category_slug,
         is_published=True,
         pub_date__lte=timezone.now(),
-    ).order_by('-pub_date')
-    paginator = Paginator(posts, 10)
-    page_number = request.GET.get('page')
-    page_obj = paginator.get_page(page_number)
+    )
+    page_obj = pagination(request, posts)
     context = {
         'page_obj': page_obj,
         'category': categories,
@@ -195,10 +200,8 @@ def profile_detail(request, username):
     profile = get_object_or_404(User, username=username)
     post_list = Post.objects.filter(
         author__username=username
-    ).order_by('-pub_date')
-    paginator = Paginator(post_list, 10)
-    page_number = request.GET.get('page')
-    page_obj = paginator.get_page(page_number)
+    )
+    page_obj = pagination(request, post_list)
     context = {
         'profile': profile,
         'page_obj': page_obj,
