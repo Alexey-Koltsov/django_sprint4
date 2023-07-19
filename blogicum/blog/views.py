@@ -7,9 +7,8 @@ from django.urls import reverse, reverse_lazy
 from django.utils import timezone
 from django.views.generic import CreateView, DeleteView, UpdateView
 
-from blog.models import Category, Comment, Post
-
 from .forms import CommentForm, PostForm
+from .models import Category, Comment, Post
 
 User = get_user_model()
 
